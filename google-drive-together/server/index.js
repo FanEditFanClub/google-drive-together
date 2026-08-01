@@ -3,8 +3,13 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
@@ -22,7 +27,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Allow embedding inside Discord client iframe
+// Allow embedding inside Discord client iframe and strip restrictions
 app.use((req, res, next) => {
   res.removeHeader('X-Frame-Options');
   res.setHeader('Content-Security-Policy', "frame-ancestors 'self' https://*.discord.com https://discord.com");
@@ -35,16 +40,11 @@ const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
 const PORT = process.env.PORT || 3001;
 
-// ---------- Root & Health check ----------
-app.get('/', (req, res) => {
-  res.send('Google Drive Together Backend is running!');
-});
-
+// ---------- API Routes ----------
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// ---------- Discord OAuth token exchange ----------
 app.post('/api/token', async (req, res) => {
   const { code } = req.body;
 
@@ -75,12 +75,18 @@ app.post('/api/token', async (req, res) => {
       return res.status(response.status).json(data);
     }
 
-    // Return the full token payload back to the Discord SDK frontend
     res.json(data);
   } catch (err) {
     console.error('Token exchange exception:', err);
     res.status(500).json({ error: 'Token exchange failed' });
   }
+});
+
+// ---------- Serve Frontend Static Files ----------
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ---------- In-memory room state ----------
@@ -157,7 +163,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Clean up empty rooms occasionally
 setInterval(() => {
   for (const [id] of rooms.entries()) {
     const size = io.sockets.adapter.rooms.get(id)?.size || 0;
