@@ -28,6 +28,15 @@ const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
 const PORT = process.env.PORT || 3001;
 
+// ---------- Root & Health check ----------
+app.get('/', (req, res) => {
+  res.send('Google Drive Together Backend is running!');
+});
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
 // ---------- Discord OAuth token exchange ----------
 app.post('/api/token', async (req, res) => {
   const { code } = req.body;
@@ -54,21 +63,17 @@ app.post('/api/token', async (req, res) => {
 
     const data = await response.json();
 
-    if (data.error) {
+    if (!response.ok) {
       console.error('Discord token error:', data);
-      return res.status(400).json(data);
+      return res.status(response.status).json(data);
     }
 
-    res.json({ access_token: data.access_token });
+    // Return the full token payload back to the Discord SDK frontend
+    res.json(data);
   } catch (err) {
-    console.error(err);
+    console.error('Token exchange exception:', err);
     res.status(500).json({ error: 'Token exchange failed' });
   }
-});
-
-// ---------- Health check ----------
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
 });
 
 // ---------- In-memory room state ----------
