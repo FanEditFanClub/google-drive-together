@@ -22,6 +22,13 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
+// Allow embedding inside Discord client iframe
+app.use((req, res, next) => {
+  res.removeHeader('X-Frame-Options');
+  res.setHeader('Content-Security-Policy', "frame-ancestors 'self' https://*.discord.com https://discord.com");
+  next();
+});
+
 app.use(express.json());
 
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
