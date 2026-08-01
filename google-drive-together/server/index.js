@@ -95,7 +95,7 @@ const rooms = new Map();
 function getOrCreateRoom(instanceId) {
   if (!rooms.has(instanceId)) {
     rooms.set(instanceId, {
-      videoUrl: null,
+      videoUrl: "https://pub-06cd9728d5bf4c4f8f2a9c2bb7a1e9ae.r2.dev/Spider-Noir-Season-1-Movie-Fan-Edit.mp4",
       isPlaying: false,
       currentTime: 0,
       lastUpdated: Date.now(),
